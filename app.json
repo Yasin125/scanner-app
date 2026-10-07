@@ -57,7 +57,8 @@
             "backgroundColor": "#0E0E10"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "scanfacile",
     "owner": "camscanners-team",
