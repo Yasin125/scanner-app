@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { pageUri, type PdfColor, type ScanDoc } from './store';
+import { getSettings, pageUri, type PdfColor, type ScanDoc } from './store';
 
 /** Expo Go has no scanner/OCR native modules: preview mode with a plain camera fallback. */
 export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -49,19 +49,29 @@ function safeName(title: string) {
   return title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'document';
 }
 
+function escapeHtml(v: string) {
+  return v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 export async function exportPdf(doc: ScanDoc) {
+  const watermark = getSettings().watermark.trim();
   const imgs = await Promise.all(
     doc.pages.map(async (p) => `data:image/jpeg;base64,${await new File(pageUri(doc, p)).base64()}`),
   );
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     @page { margin: 0; }
     html, body { margin: 0; padding: 0; }
-    .page { width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center;
+    .page { position: relative; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center;
             page-break-after: always; overflow: hidden; }
+    .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+          font: 700 56px Helvetica, Arial, sans-serif; color: rgba(120,120,120,0.28); transform: rotate(-35deg);
+          white-space: nowrap; pointer-events: none; }
     .page:last-child { page-break-after: auto; }
     img { max-width: 100%; max-height: 100%; object-fit: contain; filter: ${CSS_FILTER[doc.pdfColor]}; }
   </style></head><body>
-  ${imgs.map((src) => `<div class="page"><img src="${src}" /></div>`).join('')}
+  ${imgs
+    .map((src) => `<div class="page"><img src="${src}" />${watermark ? `<div class="wm">${escapeHtml(watermark)}</div>` : ''}</div>`)
+    .join('')}
   </body></html>`;
 
   const { uri } = await Print.printToFileAsync({ html, width: 595, height: 842 }); // A4 in points

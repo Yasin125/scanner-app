@@ -1,79 +1,194 @@
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
-import { useEffect, useState } from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../lib/theme';
+
+export type IconName = keyof typeof Ionicons.glyphMap;
 
 type BtnProps = {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'ghost' | 'danger';
+  icon?: IconName;
   style?: ViewStyle;
   disabled?: boolean;
 };
 
-export function Button({ label, onPress, variant = 'primary', style, disabled }: BtnProps) {
+export function Button({ label, onPress, variant = 'primary', icon, style, disabled }: BtnProps) {
   const t = useTheme();
-  const bg = variant === 'primary' ? t.primary : variant === 'danger' ? t.danger : t.card;
+  const bg = variant === 'primary' ? t.primary : variant === 'danger' ? t.danger : t.card2;
   const fg = variant === 'ghost' ? t.txt : t.onPrimary;
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [
-        s.btn,
-        { backgroundColor: bg, borderColor: variant === 'ghost' ? t.line : bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 },
-        style,
-      ]}
+      style={({ pressed }) => [s.btn, { backgroundColor: bg, opacity: disabled ? 0.45 : pressed ? 0.8 : 1 }, style]}
     >
-      <Text style={[s.btnTxt, { color: fg }]}>{label}</Text>
+      {icon && <Ionicons name={icon} size={18} color={fg} />}
+      <Text style={[s.btnTxt, { color: fg }]} numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
-export function Busy({ label }: { label: string | null }) {
-  const t = useTheme();
-  if (!label) return null;
+export type SheetOption = { label: string; icon?: IconName; destructive?: boolean; onPress: () => void };
+type SheetReq = { title?: string; options: SheetOption[] };
+type PromptReq = { title: string; initial: string; placeholder?: string; resolve: (v: string | null) => void };
+
+type UI = {
+  /** Runs `fn` with a blocking spinner and shows an alert-like sheet on error. */
+  busy: <T>(label: string, fn: () => Promise<T>) => Promise<T | undefined>;
+  prompt: (title: string, initial?: string, placeholder?: string) => Promise<string | null>;
+  sheet: (req: SheetReq) => void;
+  toast: (msg: string) => void;
+};
+
+const Ctx = createContext<UI | null>(null);
+
+export function useUI() {
+  const ui = useContext(Ctx);
+  if (!ui) throw new Error('useUI outside UIProvider');
+  return ui;
+}
+
+export function errorMessage(e: unknown) {
+  return e instanceof Error ? e.message : String(e);
+}
+
+export function UIProvider({ children }: { children: ReactNode }) {
+  const [busyLabel, setBusyLabel] = useState<string | null>(null);
+  const [sheetReq, setSheetReq] = useState<SheetReq | null>(null);
+  const [promptReq, setPromptReq] = useState<PromptReq | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toast = useCallback((msg: string) => {
+    setToastMsg(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(null), 3200);
+  }, []);
+
+  const ui = useMemo<UI>(
+    () => ({
+      async busy(label, fn) {
+        setBusyLabel(label);
+        try {
+          return await fn();
+        } catch (e) {
+          toast(errorMessage(e));
+          return undefined;
+        } finally {
+          setBusyLabel(null);
+        }
+      },
+      prompt: (title, initial = '', placeholder) =>
+        new Promise((resolve) => setPromptReq({ title, initial, placeholder, resolve })),
+      sheet: setSheetReq,
+      toast,
+    }),
+    [toast],
+  );
+
   return (
-    <View style={s.busy}>
+    <Ctx.Provider value={ui}>
+      {children}
+      <Sheet req={sheetReq} onClose={() => setSheetReq(null)} />
+      <Prompt
+        req={promptReq}
+        onDone={(v) => {
+          promptReq?.resolve(v);
+          setPromptReq(null);
+        }}
+      />
+      {toastMsg && <Toast msg={toastMsg} />}
+      {busyLabel && <Busy label={busyLabel} />}
+    </Ctx.Provider>
+  );
+}
+
+function Busy({ label }: { label: string }) {
+  const t = useTheme();
+  return (
+    <View style={s.overlay}>
       <View style={[s.busyBox, { backgroundColor: t.card }]}>
-        <ActivityIndicator color={t.primary} />
-        <Text style={{ color: t.txt, marginTop: 10 }}>{label}</Text>
+        <ActivityIndicator color={t.primary} size="large" />
+        <Text style={{ color: t.txt, marginTop: 12, fontWeight: '600' }}>{label}</Text>
       </View>
     </View>
   );
 }
 
-type PromptProps = {
-  visible: boolean;
-  title: string;
-  initial: string;
-  onCancel: () => void;
-  onSubmit: (value: string) => void;
-};
-
-/** Cross-platform text prompt (Alert.prompt is iOS only). */
-export function Prompt({ visible, title, initial, onCancel, onSubmit }: PromptProps) {
-  const t = useTheme();
-  const [value, setValue] = useState(initial);
-  useEffect(() => {
-    if (visible) setValue(initial);
-  }, [visible, initial]);
+function Toast({ msg }: { msg: string }) {
+  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={s.busy}>
+    <View pointerEvents="none" style={[s.toast, { top: insets.top + 10 }]}>
+      <Text style={{ color: '#fff', fontWeight: '600', textAlign: 'center' }}>{msg}</Text>
+    </View>
+  );
+}
+
+function Sheet({ req, onClose }: { req: SheetReq | null; onClose: () => void }) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={!!req} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <Pressable style={s.sheetBackdrop} onPress={onClose} />
+      <View style={[s.sheet, { backgroundColor: t.card, paddingBottom: insets.bottom + 12 }]}>
+        <View style={[s.grabber, { backgroundColor: t.line }]} />
+        {req?.title ? (
+          <Text style={[s.sheetTitle, { color: t.mut }]} numberOfLines={1}>
+            {req.title}
+          </Text>
+        ) : null}
+        <ScrollView style={{ maxHeight: 460 }}>
+          {req?.options.map((o) => (
+            <Pressable
+              key={o.label}
+              onPress={() => {
+                onClose();
+                // Let the sheet close before opening another modal.
+                setTimeout(o.onPress, 250);
+              }}
+              style={({ pressed }) => [s.sheetRow, { backgroundColor: pressed ? t.card2 : 'transparent' }]}
+            >
+              {o.icon && <Ionicons name={o.icon} size={22} color={o.destructive ? t.danger : t.txt} />}
+              <Text style={{ color: o.destructive ? t.danger : t.txt, fontSize: 16, fontWeight: '500' }}>{o.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Button label="Annuler" variant="ghost" onPress={onClose} style={{ marginHorizontal: 16, marginTop: 8 }} />
+      </View>
+    </Modal>
+  );
+}
+
+function Prompt({ req, onDone }: { req: PromptReq | null; onDone: (v: string | null) => void }) {
+  const t = useTheme();
+  const [value, setValue] = useState('');
+  useEffect(() => {
+    if (req) setValue(req.initial);
+  }, [req]);
+  return (
+    <Modal visible={!!req} transparent animationType="fade" onRequestClose={() => onDone(null)} statusBarTranslucent>
+      <View style={s.overlay}>
         <View style={[s.prompt, { backgroundColor: t.card }]}>
-          <Text style={[s.promptTitle, { color: t.txt }]}>{title}</Text>
+          <Text style={[s.promptTitle, { color: t.txt }]}>{req?.title}</Text>
           <TextInput
             value={value}
             onChangeText={setValue}
             autoFocus
             selectTextOnFocus
-            onSubmitEditing={() => onSubmit(value)}
+            placeholder={req?.placeholder}
+            placeholderTextColor={t.mut}
+            onSubmitEditing={() => onDone(value)}
             style={[s.input, { color: t.txt, borderColor: t.line, backgroundColor: t.bg }]}
           />
           <View style={s.row}>
-            <Button label="Annuler" variant="ghost" onPress={onCancel} style={{ flex: 1 }} />
-            <Button label="Enregistrer" onPress={() => onSubmit(value)} style={{ flex: 1 }} />
+            <Button label="Annuler" variant="ghost" onPress={() => onDone(null)} style={{ flex: 1 }} />
+            <Button label="Valider" onPress={() => onDone(value)} style={{ flex: 1 }} />
           </View>
         </View>
       </View>
@@ -82,12 +197,18 @@ export function Prompt({ visible, title, initial, onCancel, onSubmit }: PromptPr
 }
 
 const s = StyleSheet.create({
-  btn: { paddingVertical: 13, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, alignItems: 'center' },
+  btn: { flexDirection: 'row', gap: 8, paddingVertical: 13, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   btnTxt: { fontSize: 15, fontWeight: '600' },
-  busy: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  busyBox: { padding: 24, borderRadius: 16, alignItems: 'center', minWidth: 180 },
-  prompt: { width: '100%', maxWidth: 420, borderRadius: 16, padding: 20, gap: 14 },
+  overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  busyBox: { padding: 28, borderRadius: 18, alignItems: 'center', minWidth: 200 },
+  toast: { position: 'absolute', left: 20, right: 20, backgroundColor: 'rgba(20,20,24,0.95)', borderRadius: 12, padding: 14 },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingTop: 8, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  grabber: { width: 40, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 8 },
+  sheetTitle: { fontSize: 13, fontWeight: '600', paddingHorizontal: 20, paddingVertical: 8 },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 15 },
+  prompt: { width: '100%', maxWidth: 420, borderRadius: 18, padding: 20, gap: 14 },
   promptTitle: { fontSize: 17, fontWeight: '700' },
-  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 16 },
   row: { flexDirection: 'row', gap: 10 },
 });
