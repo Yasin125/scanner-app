@@ -1,16 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { File } from 'expo-file-system';
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PdfViewer } from '../../components/PdfViewer';
 import { type IconName, useUI } from '../../components/ui';
 import { pickImages, recognizeText, scanPages } from '../../lib/actions';
 import { printDoc } from '../../lib/edit';
 import { useDocMenu } from '../../lib/flows';
 import { authenticate, unlockedThisSession } from '../../lib/lock';
-import { addPages, pageUri, type PdfColor, setOcrText, setPdfColor, useDoc } from '../../lib/store';
+import { addPages, docDir, pageUri, type PdfColor, setOcrText, setPdfColor, useDoc } from '../../lib/store';
 import { formatDate, useTheme } from '../../lib/theme';
 
 const COLORS: { key: PdfColor; label: string }[] = [
@@ -58,28 +60,26 @@ export default function DocScreen() {
   }
 
   if (d.pdf) {
+    const pdfTools: { icon: IconName; label: string; onPress: () => void }[] = [
+      { icon: 'share-outline', label: 'Partager', onPress: () => menu.share(d) },
+      { icon: 'print-outline', label: 'Imprimer', onPress: () => ui.busy('Préparation…', () => printDoc(d)) },
+      { icon: 'create-outline', label: 'Renommer', onPress: () => menu.rename(d) },
+      { icon: 'ellipsis-horizontal', label: 'Plus', onPress: () => menu.open(d) },
+    ];
     return (
-      <View style={[s.center, { flex: 1, backgroundColor: t.bg, padding: 24, gap: 14 }]}>
-        <Stack.Screen options={{ title: '' }} />
-        <View style={[s.pdfIcon, { backgroundColor: '#FA525222' }]}>
-          <Ionicons name="document" size={54} color="#FA5252" />
-          <Text style={{ color: '#FA5252', fontWeight: '900', position: 'absolute', bottom: 30 }}>PDF</Text>
+      <View style={{ flex: 1, backgroundColor: t.bg }}>
+        <Stack.Screen options={{ title: d.title }} />
+        <View style={{ flex: 1, marginBottom: insets.bottom + 64 }}>
+          <PdfViewer uri={new File(docDir(d.id), d.pdf).uri} />
         </View>
-        <Text style={{ color: t.txt, fontSize: 20, fontWeight: '700', textAlign: 'center' }}>{d.title}</Text>
-        <Text style={{ color: t.mut }}>Importé le {formatDate(d.createdAt)}</Text>
-        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-          <Pressable onPress={() => ui.busy('Ouverture…', () => printDoc(d))} style={[s.pdfBtn, { backgroundColor: t.card }]}>
-            <Ionicons name="eye-outline" size={22} color={t.txt} />
-            <Text style={{ color: t.txt, fontWeight: '600' }}>Ouvrir / Imprimer</Text>
-          </Pressable>
-          <Pressable onPress={() => menu.share(d)} style={[s.pdfBtn, { backgroundColor: t.primary }]}>
-            <Ionicons name="share-outline" size={22} color="#fff" />
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Partager</Text>
-          </Pressable>
+        <View style={[s.bar, { paddingBottom: insets.bottom + 8, backgroundColor: t.card, borderTopColor: t.line }]}>
+          {pdfTools.map((x) => (
+            <Pressable key={x.label} onPress={x.onPress} style={({ pressed }) => [s.tool, { opacity: pressed ? 0.6 : 1 }]}>
+              <Ionicons name={x.icon} size={24} color={t.txt} />
+              <Text style={{ color: t.txt, fontSize: 11, fontWeight: '500' }}>{x.label}</Text>
+            </Pressable>
+          ))}
         </View>
-        <Pressable onPress={() => menu.open(d)} style={{ marginTop: 6 }}>
-          <Text style={{ color: t.mut }}>Plus d’options</Text>
-        </Pressable>
       </View>
     );
   }
@@ -191,8 +191,6 @@ export default function DocScreen() {
 
 const s = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
-  pdfIcon: { width: 120, height: 140, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 14 },
   num: { position: 'absolute', left: 6, bottom: 6, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
   tool: { flex: 1, alignItems: 'center', gap: 4 },
