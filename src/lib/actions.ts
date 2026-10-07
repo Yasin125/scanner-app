@@ -1,14 +1,25 @@
-import TextRecognition from '@react-native-ml-kit/text-recognition';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import DocumentScanner, { ResponseType, ScanDocumentResponseStatus } from 'react-native-document-scanner-plugin';
 
 import { pageUri, type PdfColor, type ScanDoc } from './store';
 
+/** Expo Go has no scanner/OCR native modules: preview mode with a plain camera fallback. */
+export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 /** Opens the native scanner (edge detection, crop, filters). Returns image paths, or [] if cancelled. */
 export async function scanPages(): Promise<string[]> {
+  if (isExpoGo) {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return [];
+    const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
+    return res.canceled ? [] : res.assets.map((a) => a.uri);
+  }
+  // Loaded lazily: importing it in Expo Go would crash.
+  const { default: DocumentScanner, ResponseType, ScanDocumentResponseStatus } =
+    require('react-native-document-scanner-plugin') as typeof import('react-native-document-scanner-plugin');
   const res = await DocumentScanner.scanDocument({
     croppedImageQuality: 90,
     responseType: ResponseType.ImageFilePath,
@@ -69,6 +80,9 @@ export async function shareImage(uri: string) {
 }
 
 export async function recognizeText(doc: ScanDoc) {
+  if (isExpoGo) throw new Error('La reconnaissance du texte n’est pas disponible dans l’aperçu Expo Go.');
+  const { default: TextRecognition } =
+    require('@react-native-ml-kit/text-recognition') as typeof import('@react-native-ml-kit/text-recognition');
   const parts: string[] = [];
   for (const p of doc.pages) {
     const res = await TextRecognition.recognize(pageUri(doc, p));
