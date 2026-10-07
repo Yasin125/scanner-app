@@ -66,6 +66,12 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "ScanFacile utilise Face ID pour protéger vos documents verrouillés."
+        }
       ]
     ],
     "scheme": "scanfacile",

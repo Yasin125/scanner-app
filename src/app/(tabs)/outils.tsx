@@ -10,10 +10,10 @@ export default function Outils() {
   const x = useTools();
 
   const sections = [
-    { title: 'Scanner', tools: [x.id, x.ocr, x.idPhoto, x.board, x.book, x.scan] },
+    { title: 'Scanner', tools: [x.id, x.ocr, x.idPhoto, x.timestamp, x.book, x.board, x.scan] },
     { title: 'Importer', tools: [x.images, x.files] },
     { title: 'Convertir', tools: [x.toPdf, x.toWord, x.toExcel] },
-    { title: 'Modifier', tools: [x.sign, x.watermark, x.merge, x.reorder, x.lock, x.compress] },
+    { title: 'Modifier', tools: [x.sign, x.watermark, x.crop, x.merge, x.reorder, x.lock, x.compress] },
     { title: 'Utilitaires', tools: [x.print, x.qr] },
   ];
 

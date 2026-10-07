@@ -9,6 +9,14 @@ import { formatDate, type Theme, useTheme } from '../lib/theme';
 export function Thumb({ doc, size = 64 }: { doc: ScanDoc; size?: number }) {
   const t = useTheme();
   const style = { width: size, height: size, borderRadius: 6, backgroundColor: t.card2 };
+  if (doc.locked || doc.pdf) {
+    return (
+      <View style={[style, s.center, doc.pdf && { backgroundColor: '#FA525222' }]}>
+        <Ionicons name={doc.locked ? 'lock-closed' : 'document'} size={size / 2.6} color={doc.locked ? t.mut : '#FA5252'} />
+        {doc.pdf && !doc.locked && <Text style={{ color: '#FA5252', fontSize: size / 7, fontWeight: '900' }}>PDF</Text>}
+      </View>
+    );
+  }
   if (!doc.pages[0]) {
     return (
       <View style={[style, s.center]}>
@@ -85,10 +93,10 @@ export function DocCard({ doc, width, onMenu }: { doc: ScanDoc; width: number; o
   return (
     <Pressable onPress={() => router.push(`/doc/${doc.id}`)} onLongPress={onMenu} style={({ pressed }) => [{ width, opacity: pressed ? 0.7 : 1 }]}>
       <View style={[s.cardImg, { height: width * 1.3, backgroundColor: t.card2 }]}>
-        {doc.pages[0] ? (
+        {doc.pages[0] && !doc.locked ? (
           <Image source={{ uri: pageUri(doc, doc.pages[0]) }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
-          <Ionicons name="document-outline" size={28} color={t.mut} />
+          <Ionicons name={doc.locked ? 'lock-closed' : doc.pdf ? 'document' : 'document-outline'} size={28} color={doc.pdf && !doc.locked ? '#FA5252' : t.mut} />
         )}
         <View style={s.count}>
           <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>{doc.pages.length}</Text>

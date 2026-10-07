@@ -14,6 +14,10 @@ export type ScanDoc = {
   pdfColor: PdfColor;
   ocrText?: string;
   folderId?: string;
+  /** Requires Face ID / device code to open. */
+  locked?: boolean;
+  /** Imported PDF file name (inside the doc folder); such documents have no pages. */
+  pdf?: string;
 };
 
 export type Folder = { id: string; name: string; createdAt: number };
@@ -23,9 +27,19 @@ export type Settings = {
   theme: ThemePref;
   pdfColor: PdfColor;
   watermark: string;
+  /** Saved signature: SVG path data, shown through the `signatureBox` viewBox. */
+  signature: string[];
+  signatureBox: { x: number; y: number; w: number; h: number };
 };
 
-const DEFAULT_SETTINGS: Settings = { name: '', theme: 'dark', pdfColor: 'color', watermark: '' };
+const DEFAULT_SETTINGS: Settings = {
+  name: '',
+  theme: 'dark',
+  pdfColor: 'color',
+  watermark: '',
+  signature: [],
+  signatureBox: { x: 0, y: 0, w: 1, h: 1 },
+};
 
 /** Small AsyncStorage-backed store usable with useSyncExternalStore. */
 function persisted<T>(key: string, initial: T) {
@@ -155,6 +169,33 @@ export async function createDoc(sources: string[], title = defaultTitle(), folde
 export function addPages(id: string, sources: string[]) {
   const pages = importImages(id, sources);
   return updateDoc(id, (d) => ({ ...d, pages: [...d.pages, ...pages], ocrText: undefined }));
+}
+
+/** Replaces page `index` with a new image (crop, rotation, signature…). */
+export function replacePage(id: string, index: number, source: string) {
+  const [name] = importImages(id, [source]);
+  const doc = docsStore.get().find((d) => d.id === id);
+  const old = doc?.pages[index];
+  if (old) {
+    const f = new File(docDir(id), old);
+    if (f.exists) f.delete();
+  }
+  return updateDoc(id, (d) => ({ ...d, pages: d.pages.map((p, i) => (i === index ? name : p)), ocrText: undefined }));
+}
+
+export function setLocked(id: string, locked: boolean) {
+  return updateDoc(id, (d) => ({ ...d, locked }));
+}
+
+export async function importPdf(source: string, title: string) {
+  const id = newId();
+  const dir = docDir(id);
+  dir.create({ intermediates: true });
+  new File(toFileUri(source)).copySync(new File(dir, 'document.pdf'));
+  const now = Date.now();
+  const doc: ScanDoc = { id, title: title.replace(/\.pdf$/i, ''), pages: [], pdf: 'document.pdf', createdAt: now, updatedAt: now, pdfColor: 'color' };
+  await docsStore.set([doc, ...docsStore.get()]);
+  return doc;
 }
 
 export function renameDoc(id: string, title: string) {

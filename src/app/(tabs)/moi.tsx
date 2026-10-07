@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +63,7 @@ export default function Moi() {
         onPress: () => pick('Couleurs PDF par défaut', COLORS, settings.pdfColor, (pdfColor) => updateSettings({ pdfColor })),
       },
       { icon: 'water-outline', label: 'Filigrane', value: settings.watermark || 'Aucun', onPress: editWatermark },
+      { icon: 'pencil-outline', label: 'Ma signature', value: settings.signature.length ? 'Enregistrée' : 'Créer', onPress: () => router.push('/signature') },
     ],
     [
       { icon: 'cloud-outline', label: 'Synchronisation cloud', value: 'Bientôt', onPress: () => ui.toast('La synchronisation cloud arrive bientôt') },

@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { getSettings, pageUri, type PdfColor, type ScanDoc } from './store';
+import { docDir, getSettings, pageUri, type PdfColor, type ScanDoc } from './store';
 
 /** Expo Go has no scanner/OCR native modules: preview mode with a plain camera fallback. */
 export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -82,7 +82,7 @@ export async function exportPdf(doc: ScanDoc) {
 }
 
 export async function sharePdf(doc: ScanDoc) {
-  const uri = await exportPdf(doc);
+  const uri = doc.pdf ? new File(docDir(doc.id), doc.pdf).uri : await exportPdf(doc);
   await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: doc.title });
 }
 

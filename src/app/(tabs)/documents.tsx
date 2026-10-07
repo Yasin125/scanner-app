@@ -32,7 +32,7 @@ export default function Documents() {
   }
 
   const cards: { label: string; icon: IconName; color: string; onPress: () => void }[] = [
-    { label: 'Importer fichiers', icon: 'document', color: '#5C7CFA', onPress: () => ui.toast('« Importer fichiers » arrive bientôt') },
+    { label: 'Importer fichiers', icon: 'document', color: '#5C7CFA', onPress: cap.importFiles },
     { label: 'Importer images', icon: 'image', color: '#4DABF7', onPress: () => cap.importImages() },
     { label: 'Créer un dossier', icon: 'folder', color: '#20C997', onPress: newFolder },
   ];

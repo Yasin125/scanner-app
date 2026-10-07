@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../lib/theme';
@@ -44,7 +45,23 @@ type UI = {
   prompt: (title: string, initial?: string, placeholder?: string) => Promise<string | null>;
   sheet: (req: SheetReq) => void;
   toast: (msg: string) => void;
+  /**
+   * Renders `overlay(layoutWidth, layoutHeight)` on top of the image off screen and returns a new JPEG
+   * of `width` × `height` px (used for timestamps and signatures).
+   */
+  snapshot: (uri: string, width: number, height: number, overlay: (w: number, h: number) => ReactNode) => Promise<string>;
 };
+
+type SnapJob = {
+  uri: string;
+  width: number;
+  height: number;
+  overlay: (w: number, h: number) => ReactNode;
+  resolve: (uri: string) => void;
+  reject: (e: unknown) => void;
+};
+
+const SNAP_W = 600;
 
 const Ctx = createContext<UI | null>(null);
 
@@ -64,6 +81,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [promptReq, setPromptReq] = useState<PromptReq | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [snap, setSnap] = useState<SnapJob | null>(null);
+  const snapQueue = useRef<Promise<unknown>>(Promise.resolve());
 
   const toast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -88,6 +107,13 @@ export function UIProvider({ children }: { children: ReactNode }) {
         new Promise((resolve) => setPromptReq({ title, initial, placeholder, resolve })),
       sheet: setSheetReq,
       toast,
+      snapshot(uri, width, height, overlay) {
+        // One capture at a time: the off-screen host renders a single job.
+        const run = () => new Promise<string>((resolve, reject) => setSnap({ uri, width, height, overlay, resolve, reject }));
+        const p = snapQueue.current.then(run, run);
+        snapQueue.current = p.catch(() => {});
+        return p;
+      },
     }),
     [toast],
   );
@@ -103,9 +129,32 @@ export function UIProvider({ children }: { children: ReactNode }) {
           setPromptReq(null);
         }}
       />
+      {snap && <SnapHost job={snap} onDone={() => setSnap(null)} />}
       {toastMsg && <Toast msg={toastMsg} />}
       {busyLabel && <Busy label={busyLabel} />}
     </Ctx.Provider>
+  );
+}
+
+function SnapHost({ job, onDone }: { job: SnapJob; onDone: () => void }) {
+  const ref = useRef<View>(null);
+  const w = SNAP_W;
+  const h = Math.round((SNAP_W * job.height) / job.width);
+  async function capture() {
+    try {
+      const uri = await captureRef(ref, { format: 'jpg', quality: 0.92, width: job.width, height: job.height, result: 'tmpfile' });
+      job.resolve(uri);
+    } catch (e) {
+      job.reject(e);
+    } finally {
+      onDone();
+    }
+  }
+  return (
+    <View ref={ref} collapsable={false} pointerEvents="none" style={{ position: 'absolute', left: -w - 100, top: 0, width: w, height: h, backgroundColor: '#fff' }}>
+      <Image source={{ uri: job.uri }} style={{ width: w, height: h }} onLoad={() => setTimeout(capture, 60)} onError={() => (job.reject(new Error('Image illisible')), onDone())} />
+      <View style={StyleSheet.absoluteFill}>{job.overlay(w, h)}</View>
+    </View>
   );
 }
 
