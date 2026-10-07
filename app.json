@@ -46,6 +46,13 @@
         }
       ]
     ],
-    "scheme": "scanfacile"
+    "scheme": "scanfacile",
+    "owner": "camscanners-team",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e0211ddc-f40b-4649-a27c-02ddb5026065"
+      }
+    }
   }
 }
