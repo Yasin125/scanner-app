@@ -58,7 +58,15 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ScanFacile utilise la caméra pour numériser vos documents.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "scheme": "scanfacile",
     "owner": "camscanners-team",

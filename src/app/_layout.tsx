@@ -34,6 +34,7 @@ export default function RootLayout() {
           <Stack.Screen name="fusionner" options={{ title: 'Fusionner des documents', presentation: 'modal' }} />
           <Stack.Screen name="page/[id]" options={{ title: 'Page', presentation: 'fullScreenModal', headerShown: false }} />
           <Stack.Screen name="ocr/[id]" options={{ title: 'Texte extrait' }} />
+          <Stack.Screen name="camera" options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: '#000' } }} />
         </Stack>
       </UIProvider>
     </SafeAreaProvider>

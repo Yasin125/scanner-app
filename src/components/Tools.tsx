@@ -26,7 +26,7 @@ export function useTools() {
     ocr: { key: 'ocr', label: 'Extraire le texte', icon: 'text-outline', color: '#F59F00', onPress: cap.extractText },
     idPhoto: { key: 'idPhoto', label: "Photo d'identité", icon: 'person-outline', color: '#4C6EF5' },
     book: { key: 'book', label: 'Livre', icon: 'book-outline', color: '#15AABF' },
-    board: { key: 'board', label: 'Tableau blanc', icon: 'easel-outline', color: '#20C997', onPress: () => cap.scan() },
+    board: { key: 'board', label: 'Tableau blanc', icon: 'easel-outline', color: '#20C997', onPress: cap.board },
     images: { key: 'images', label: 'Importer images', icon: 'images-outline', color: '#4DABF7', onPress: () => cap.importImages() },
     files: { key: 'files', label: 'Importer fichiers', icon: 'folder-open-outline', color: '#5C7CFA' },
     merge: { key: 'merge', label: 'Fusionner', icon: 'git-merge-outline', color: '#7950F2', onPress: () => router.push('/fusionner') },

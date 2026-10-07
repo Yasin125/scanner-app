@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useCallback } from 'react';
 
 import { useUI } from '../components/ui';
-import { pickImages, recognizeText, scanPages, sharePdf } from './actions';
+import { pickImages, recognizeText, sharePdf } from './actions';
 import { createDoc, deleteDoc, moveDoc, renameDoc, type ScanDoc, setOcrText, useFolders } from './store';
 
 /** Capture flows shared by the home screen, the tab bar camera button and the tools screen. */
@@ -31,11 +31,15 @@ export function useCapture() {
     [ui],
   );
 
+  const camera = (mode: 'scan' | 'id' | 'ocr' | 'board', folderId?: string) =>
+    router.push({ pathname: '/camera', params: folderId ? { mode, folderId } : { mode } });
+
   return {
-    scan: (folderId?: string) => start(scanPages, { folderId }),
+    scan: (folderId?: string) => camera('scan', folderId),
     importImages: (folderId?: string) => start(pickImages, { folderId }),
-    idCard: () => start(() => scanPages({ max: 2 }), { title: "Carte d'identité" }),
-    extractText: () => start(scanPages, { ocr: true, title: 'Texte extrait' }),
+    idCard: () => camera('id'),
+    extractText: () => camera('ocr'),
+    board: () => camera('board'),
   };
 }
 
