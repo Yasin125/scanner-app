@@ -93,11 +93,11 @@ export function defaultTitle() {
   return `Scan ${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}.${pad(d.getMinutes())}`;
 }
 
-export async function createDoc(sources: string[]) {
+export async function createDoc(sources: string[], title = defaultTitle()) {
   const id = newId();
   const pages = importImages(id, sources);
   const now = Date.now();
-  const doc: ScanDoc = { id, title: defaultTitle(), pages, createdAt: now, updatedAt: now, pdfColor: 'color' };
+  const doc: ScanDoc = { id, title, pages, createdAt: now, updatedAt: now, pdfColor: 'color' };
   docs = [doc, ...docs];
   emit();
   await persist();

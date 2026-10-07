@@ -23,7 +23,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: t.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'ScanFacile' }} />
+        <Stack.Screen name="index" options={{ title: 'ScanFacile', headerShown: false }} />
         <Stack.Screen name="doc/[id]" options={{ title: 'Document' }} />
         <Stack.Screen name="page/[id]" options={{ title: 'Page', presentation: 'fullScreenModal', headerShown: false }} />
         <Stack.Screen name="ocr/[id]" options={{ title: 'Texte extrait' }} />

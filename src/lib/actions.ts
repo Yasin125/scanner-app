@@ -10,7 +10,7 @@ import { pageUri, type PdfColor, type ScanDoc } from './store';
 export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 /** Opens the native scanner (edge detection, crop, filters). Returns image paths, or [] if cancelled. */
-export async function scanPages(): Promise<string[]> {
+export async function scanPages(opts: { max?: number } = {}): Promise<string[]> {
   if (isExpoGo) {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return [];
@@ -22,6 +22,7 @@ export async function scanPages(): Promise<string[]> {
     require('react-native-document-scanner-plugin') as typeof import('react-native-document-scanner-plugin');
   const res = await DocumentScanner.scanDocument({
     croppedImageQuality: 90,
+    maxNumDocuments: opts.max,
     responseType: ResponseType.ImageFilePath,
   });
   if (res.status === ScanDocumentResponseStatus.Cancel) return [];
