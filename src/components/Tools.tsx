@@ -77,41 +77,33 @@ export function useTools() {
   return t;
 }
 
-export function ToolGrid({ tools }: { tools: Tool[] }) {
+export function ToolGrid({ tools, columns = 4 }: { tools: Tool[]; columns?: number }) {
   const th = useTheme();
   const ui = useUI();
   return (
     <View style={s.grid}>
-      {tools.map((tool) => {
-        const soon = !tool.onPress;
-        return (
-          <Pressable
-            key={tool.key}
-            onPress={tool.onPress ?? (() => ui.toast(`« ${tool.label} » arrive bientôt`))}
-            style={({ pressed }) => [s.cell, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <View style={[s.circle, { backgroundColor: th.dark ? tool.color + '22' : tool.color + '18' }]}>
-              <Ionicons name={tool.icon} size={26} color={tool.color} />
-              {soon && (
-                <View style={[s.soon, { backgroundColor: th.card2 }]}>
-                  <Text style={{ color: th.mut, fontSize: 8, fontWeight: '800' }}>BIENTÔT</Text>
-                </View>
-              )}
-            </View>
-            <Text style={[s.label, { color: soon ? th.mut : th.txt }]} numberOfLines={2}>
-              {tool.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {tools.map((tool) => (
+        <Pressable
+          key={tool.key}
+          accessibilityRole="button"
+          onPress={tool.onPress ?? (() => ui.toast(`« ${tool.label} » arrive bientôt`))}
+          style={({ pressed }) => [s.cell, { width: `${100 / columns}%`, opacity: pressed ? 0.6 : 1 }]}
+        >
+          <View style={[s.tile, { backgroundColor: th.dark ? tool.color + '26' : tool.color + '14' }]}>
+            <Ionicons name={tool.icon} size={24} color={tool.color} />
+          </View>
+          <Text style={[s.label, { color: th.txt }]} numberOfLines={2}>
+            {tool.label}
+          </Text>
+        </Pressable>
+      ))}
     </View>
   );
 }
 
 const s = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 18 },
-  cell: { width: '25%', alignItems: 'center', gap: 8, paddingHorizontal: 2 },
-  circle: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
-  soon: { position: 'absolute', top: -6, right: -14, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
-  label: { fontSize: 12.5, textAlign: 'center', fontWeight: '500', lineHeight: 16 },
+  cell: { alignItems: 'center', gap: 8, paddingHorizontal: 2 },
+  tile: { width: 54, height: 54, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 12, textAlign: 'center', fontWeight: '500', lineHeight: 15 },
 });

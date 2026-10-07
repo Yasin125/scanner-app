@@ -19,14 +19,15 @@ export default function Outils() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <View style={[s.top, { paddingTop: insets.top + 12 }]}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 10, paddingBottom: TAB_SPACE }}>
         <Text style={[s.title, { color: t.txt }]}>Outils</Text>
-      </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + TAB_SPACE }}>
+        <Text style={{ color: t.mut, paddingHorizontal: 20, marginTop: 4 }}>Tout ce qu’il faut pour vos documents.</Text>
         {sections.map((sec) => (
           <View key={sec.title} style={s.section}>
-            <Text style={[s.secTitle, { color: t.txt }]}>{sec.title}</Text>
-            <ToolGrid tools={sec.tools} />
+            <Text style={[s.secTitle, { color: t.mut }]}>{sec.title}</Text>
+            <View style={[s.card, { backgroundColor: t.card, borderColor: t.line }]}>
+              <ToolGrid tools={sec.tools} />
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -35,8 +36,8 @@ export default function Outils() {
 }
 
 const s = StyleSheet.create({
-  top: { paddingHorizontal: 20, paddingBottom: 6 },
-  title: { fontSize: 28, fontWeight: '800' },
-  section: { paddingHorizontal: 8, paddingTop: 18, paddingBottom: 10 },
-  secTitle: { fontSize: 18, fontWeight: '700', marginBottom: 16, marginLeft: 12 },
+  title: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5, paddingHorizontal: 20 },
+  section: { paddingHorizontal: 20, paddingTop: 22 },
+  secTitle: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginLeft: 4 },
+  card: { borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 18, paddingHorizontal: 6 },
 });

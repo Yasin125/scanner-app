@@ -34,7 +34,7 @@ export type Settings = {
 
 const DEFAULT_SETTINGS: Settings = {
   name: '',
-  theme: 'dark',
+  theme: 'auto',
   pdfColor: 'color',
   watermark: '',
   signature: [],
@@ -232,10 +232,14 @@ export function deletePage(id: string, index: number) {
   return updateDoc(id, (d) => ({ ...d, pages: d.pages.filter((_, i) => i !== index), ocrText: undefined }));
 }
 
+/** Called with the id of every document deleted by the user (cloud sync removes it remotely). */
+export const docDeletedListeners = new Set<(id: string) => void>();
+
 export async function deleteDoc(id: string) {
   const dir = docDir(id);
   if (dir.exists) dir.delete();
   await docsStore.set(docsStore.get().filter((d) => d.id !== id));
+  docDeletedListeners.forEach((l) => l(id));
 }
 
 /** Creates a new document containing the pages of `ids`, in order. Originals are kept. */
@@ -271,4 +275,38 @@ export function storageUsed() {
   } catch {
     return 0;
   }
+}
+
+// ───────────── Cloud sync helpers ─────────────
+
+export function getDocs() {
+  return docsStore.get();
+}
+
+export function subscribeDocs(l: () => void) {
+  return docsStore.subscribe(l);
+}
+
+export function getFolders() {
+  return foldersStore.get();
+}
+
+/** Inserts or replaces a document as received from the cloud (keeps its own updatedAt). */
+export function putDoc(doc: ScanDoc) {
+  const all = docsStore.get();
+  const exists = all.some((d) => d.id === doc.id);
+  return docsStore.set(exists ? all.map((d) => (d.id === doc.id ? doc : d)) : [doc, ...all]);
+}
+
+/** Removes a document locally without notifying the cloud (it was deleted on another device). */
+export async function dropDoc(id: string) {
+  const dir = docDir(id);
+  if (dir.exists) dir.delete();
+  await docsStore.set(docsStore.get().filter((d) => d.id !== id));
+}
+
+export async function folderIdByName(name: string | undefined) {
+  if (!name) return undefined;
+  const found = foldersStore.get().find((f) => f.name === name);
+  return found ? found.id : (await createFolder(name)).id;
 }

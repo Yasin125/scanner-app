@@ -39,25 +39,22 @@ export default function Documents() {
 
   const header = (
     <View>
-      <View style={[s.top, { paddingTop: insets.top + 8 }]}>
-        <View style={s.storage}>
-          <View style={[s.cloud, { backgroundColor: t.card }]}>
-            <Ionicons name="phone-portrait-outline" size={18} color={t.primary} />
-          </View>
-          <View>
-            <Text style={{ color: t.txt, fontSize: 12, fontWeight: '600' }}>{formatSize(used)}</Text>
-            <Text style={{ color: t.mut, fontSize: 11 }}>sur l’appareil</Text>
-          </View>
-        </View>
-        <View style={[s.search, { backgroundColor: t.card }]}>
+      <View style={[s.titleRow, { paddingTop: insets.top + 10 }]}>
+        <Text style={{ color: t.txt, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>Fichiers</Text>
+        <Text style={{ color: t.mut, fontSize: 13 }}>{formatSize(used)} sur l’appareil</Text>
+      </View>
+      <View style={s.top}>
+        <View style={[s.search, { backgroundColor: t.card, borderColor: t.line }]}>
           <Ionicons name="search" size={18} color={t.mut} />
           <TextInput value={q} onChangeText={setQ} placeholder="Rechercher" placeholderTextColor={t.mut} style={[s.searchInput, { color: t.txt }]} />
         </View>
       </View>
       <View style={s.cards}>
         {cards.map((c) => (
-          <Pressable key={c.label} onPress={c.onPress} style={({ pressed }) => [s.card, { backgroundColor: t.card, opacity: pressed ? 0.7 : 1 }]}>
-            <Ionicons name={c.icon} size={30} color={c.color} />
+          <Pressable key={c.label} onPress={c.onPress} style={({ pressed }) => [s.card, { backgroundColor: t.card, borderColor: t.line, opacity: pressed ? 0.7 : 1 }]}>
+            <View style={[s.cardIc, { backgroundColor: c.color + (t.dark ? '26' : '14') }]}>
+              <Ionicons name={c.icon} size={22} color={c.color} />
+            </View>
             <Text style={{ color: t.txt, fontSize: 13, fontWeight: '500', textAlign: 'center' }} numberOfLines={2}>
               {c.label}
             </Text>
@@ -75,11 +72,11 @@ export default function Documents() {
 }
 
 const s = StyleSheet.create({
+  titleRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingBottom: 14 },
-  storage: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cloud: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  search: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12 },
+  search: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 10 },
   cards: { flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
-  card: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 20, paddingHorizontal: 6, borderRadius: 14 },
+  card: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, paddingHorizontal: 6, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth },
+  cardIc: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
