@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "ScanFacile",
+    "slug": "scanfacile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fr.badrulbinafruz.scanfacile",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "ScanFacile a besoin d’accéder à vos photos pour importer des documents.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1E5EFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "fr.badrulbinafruz.scanfacile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      "expo-image",
+      "expo-router",
+      [
+        "react-native-document-scanner-plugin",
+        {
+          "cameraPermission": "ScanFacile utilise la caméra pour numériser vos documents."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ScanFacile a besoin d’accéder à vos photos pour importer des documents.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "scheme": "scanfacile"
+  }
+}
